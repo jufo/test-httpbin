@@ -30,3 +30,33 @@ Validation: the k6 MCP validator ran 1 VU / 1 iteration successfully (exit 0):
 HTTP 200, 1024 response bytes, 2/2 checks passed, and no failed HTTP requests.
 The validator overrides the scenario for this short check; it does not verify
 the full 10-minute ramp. The full load test has not been run.
+
+## Capture CPU usage every 10 seconds
+
+Use `pidstat` (provided by the `sysstat` package) on the host where both k6
+and httpbin processes are visible. Before starting the test, run this in a
+separate terminal:
+
+```bash
+pidstat -u -h -l -p ALL -C 'k6|gunicorn|httpbin|python' 10 \
+  | tee cpu-usage.log
+```
+
+Run the k6 command above in another terminal. Once the test finishes,
+including any in-flight requests, stop pidstat with **Ctrl+C**.
+`cpu-usage.log` contains the readings and is overwritten each time this
+command runs; use a different filename to preserve earlier runs.
+
+The monitor reports CPU usage averaged over each 10-second interval:
+
+- `-u` selects CPU statistics; `-h` keeps each record on one line.
+- `-l` includes full command lines so you can identify the processes.
+- `-p ALL` discovers processes throughout the run, including new workers;
+  `-C` filters by command name. The filter can include unrelated Python
+  processes, so identify httpbin using its command line.
+- `%CPU` of 100 means one fully occupied CPU core. Multithreaded k6 can
+  exceed 100%. For httpbin with multiple workers, sum their `%CPU` values
+  at each timestamp to get the total for the service.
+
+See the [pidstat manual](https://man7.org/linux/man-pages/man1/pidstat.1.html)
+for additional options.

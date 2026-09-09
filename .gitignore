@@ -1,0 +1,23 @@
+# Local Python environment and bytecode
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local agent configuration and installed skills
+/.codex/
+/.agents/
+
+# Local environment variables
+.env
+.env.*
+!.env.example
+
+# CPU monitoring logs and generated k6 results
+*.log
+/k6/results/
+
+# Editor and operating-system files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
