@@ -80,16 +80,20 @@ Each VU continuously sends sequential GET requests with no added sleep.
 The run ends after the ramp, with up to 30 seconds for in-flight requests
 to finish. There is no hold stage at the final VU count.
 
-Responses are read as binary so the byte-count check measures bytes accurately.
-All requests must succeed and all status/size checks must pass for a successful
-exit. Latency is reported without an arbitrary latency threshold.
+Response bodies are discarded with `discardResponseBodies: true` to reduce
+load-generator memory use and garbage collection, following the
+[k6 guidance](https://grafana.com/docs/k6/latest/testing-guides/running-large-tests/#save-memory-with-discardresponsebodies).
+This experiment checks HTTP status only; it no longer validates the received
+byte count. All requests must succeed and all status checks must pass for a
+successful exit. Latency is reported without an arbitrary latency threshold.
 
 The locally installed httpbin caps `/bytes/{n}` responses at 100 KiB (102400
 bytes). The script validates this limit before generating traffic.
 
 ## Validation
 
-The k6 MCP validator ran 1 VU / 1 iteration successfully (exit 0):
-HTTP 200, 1024 response bytes, 2/2 checks passed, and no failed HTTP requests.
-The validator overrides the scenario for this short check; it does not verify
-the full 10-minute ramp. The full load test has not been run.
+The response-body experiment passed `k6 inspect` and a local smoke run with
+1 VU, 1 iteration, and `BYTES=4096` (exit 0): HTTP 200, 1/1 checks passed,
+and no failed HTTP requests. A temporary wrapper replaced the ramp scenario
+for the smoke run. This verifies basic functionality; it does not measure
+performance improvement or validate the full 10-minute ramp.

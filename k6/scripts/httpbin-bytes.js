@@ -16,6 +16,7 @@ const bytes = integerEnv('BYTES', 1024, 0, 102400);
 const baseURL = (__ENV.BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 export const options = {
+  discardResponseBodies: true,
   scenarios: {
     bytes_ramp: {
       executor: 'ramping-vus',
@@ -34,7 +35,6 @@ export const options = {
 export default function () {
   // Each VU sends sequential requests continuously, with no artificial delay.
   const response = http.get(`${baseURL}/bytes/${bytes}`, {
-    responseType: 'binary',
     timeout: '30s',
     redirects: 0,
     tags: { name: 'GET /bytes/{n}' },
@@ -42,8 +42,5 @@ export default function () {
 
   check(response, {
     'status is 200': (r) => r.status === 200,
-    'response has requested byte count': (r) =>
-      r.body !== null && r.body.byteLength === bytes,
   });
 }
-
