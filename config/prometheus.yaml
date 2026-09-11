@@ -1,0 +1,3 @@
+# k6 sends metrics through the remote-write receiver enabled in Compose.
+# No application scrape target is required.
+scrape_configs: []

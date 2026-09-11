@@ -1,25 +1,23 @@
 # httpbin bytes ramp test
 
-## Start httpbin
+## Start go-httpbin, Prometheus, and Grafana
 
-From the repository root, activate the virtual environment and start httpbin:
-
-```bash
-source .venv/bin/activate
-gunicorn --bind 127.0.0.1:8000 httpbin:app
-```
-
-Leave this terminal running while you test.
-
-## Start Prometheus and Grafana (optional)
-
-From the `k6-oss-workshop` project directory, run:
+From the repository root, run:
 
 ```bash
 docker compose up -d
 ```
 
-Use `docker ps` to see the published ports for Prometheus and Grafana.
+The Compose stack runs go-httpbin at `http://localhost:8000`, Prometheus at
+`http://localhost:9090`, and Grafana at `http://localhost:3000`. Grafana is
+provisioned with the Prometheus data source and the workshop's k6 dashboard.
+The go-httpbin service maps host port 8000 to container port 8080, matching
+the test's default `BASE_URL`.
+
+Stop any existing Python httpbin process using port 8000, and stop the
+workshop stack if it is using ports 9090 or 3000, before starting this stack.
+Use `docker compose ps` to check the services and `docker compose down` to
+stop and remove them.
 
 ## Capture CPU usage every 10 seconds
 
@@ -87,8 +85,9 @@ This experiment checks HTTP status only; it no longer validates the received
 byte count. All requests must succeed and all status checks must pass for a
 successful exit. Latency is reported without an arbitrary latency threshold.
 
-The locally installed httpbin caps `/bytes/{n}` responses at 100 KiB (102400
-bytes). The script validates this limit before generating traffic.
+The script retains its 100 KiB (102400-byte) maximum for `BYTES`, originally
+chosen to match Python httpbin. It validates this limit before generating
+traffic.
 
 ## Validation
 
