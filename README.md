@@ -26,7 +26,7 @@ and httpbin processes are visible. Before starting the test, run this in a
 separate terminal:
 
 ```bash
-pidstat -u -h -l -p ALL -C 'k6|gunicorn|httpbin|python' 10 \
+pidstat -u -h -l -p ALL -C 'k6|httpbin' 10 \
   | tee cpu-usage.log
 ```
 
@@ -40,8 +40,7 @@ The monitor reports CPU usage averaged over each 10-second interval:
 - `-u` selects CPU statistics; `-h` keeps each record on one line.
 - `-l` includes full command lines so you can identify the processes.
 - `-p ALL` discovers processes throughout the run, including new workers;
-  `-C` filters by command name. The filter can include unrelated Python
-  processes, so identify httpbin using its command line.
+  `-C` filters by command name to include k6 and go-httpbin.
 - `%CPU` of 100 means one fully occupied CPU core. Multithreaded k6 can
   exceed 100%. For httpbin with multiple workers, sum their `%CPU` values
   at each timestamp to get the total for the service.
