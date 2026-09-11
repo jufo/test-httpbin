@@ -1,12 +1,73 @@
 # httpbin bytes ramp test
 
-Run from the repository root:
+## Start httpbin
+
+From the repository root, activate the virtual environment and start httpbin:
+
+```bash
+source .venv/bin/activate
+gunicorn --bind 127.0.0.1:8000 httpbin:app
+```
+
+Leave this terminal running while you test.
+
+## Start Prometheus and Grafana (optional)
+
+From the `k6-oss-workshop` project directory, run:
+
+```bash
+docker compose up -d
+```
+
+Use `docker ps` to see the published ports for Prometheus and Grafana.
+
+## Capture CPU usage every 10 seconds
+
+Use `pidstat` (provided by the `sysstat` package) on the host where both k6
+and httpbin processes are visible. Before starting the test, run this in a
+separate terminal:
+
+```bash
+pidstat -u -h -l -p ALL -C 'k6|gunicorn|httpbin|python' 10 \
+  | tee cpu-usage.log
+```
+
+Run one of the k6 commands below in another terminal. Once the test finishes,
+including any in-flight requests, stop pidstat with **Ctrl+C**.
+`cpu-usage.log` contains the readings and is overwritten each time this
+command runs; use a different filename to preserve earlier runs.
+
+The monitor reports CPU usage averaged over each 10-second interval:
+
+- `-u` selects CPU statistics; `-h` keeps each record on one line.
+- `-l` includes full command lines so you can identify the processes.
+- `-p ALL` discovers processes throughout the run, including new workers;
+  `-C` filters by command name. The filter can include unrelated Python
+  processes, so identify httpbin using its command line.
+- `%CPU` of 100 means one fully occupied CPU core. Multithreaded k6 can
+  exceed 100%. For httpbin with multiple workers, sum their `%CPU` values
+  at each timestamp to get the total for the service.
+
+See the [pidstat manual](https://man7.org/linux/man-pages/man1/pidstat.1.html)
+for additional options.
+
+## Run the test
+
+From the repository root in another terminal:
 
 ```bash
 k6 run -e TARGET_VUS=50 -e BYTES=4096 k6/scripts/httpbin-bytes.js
 ```
 
-Configuration:
+To also send metrics to Prometheus for viewing in Grafana:
+
+```bash
+k6 run --out=experimental-prometheus-rw \
+  -e TARGET_VUS=50 -e BYTES=4096 \
+  k6/scripts/httpbin-bytes.js
+```
+
+## Configuration and test behavior
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -26,37 +87,9 @@ exit. Latency is reported without an arbitrary latency threshold.
 The locally installed httpbin caps `/bytes/{n}` responses at 100 KiB (102400
 bytes). The script validates this limit before generating traffic.
 
-Validation: the k6 MCP validator ran 1 VU / 1 iteration successfully (exit 0):
+## Validation
+
+The k6 MCP validator ran 1 VU / 1 iteration successfully (exit 0):
 HTTP 200, 1024 response bytes, 2/2 checks passed, and no failed HTTP requests.
 The validator overrides the scenario for this short check; it does not verify
 the full 10-minute ramp. The full load test has not been run.
-
-## Capture CPU usage every 10 seconds
-
-Use `pidstat` (provided by the `sysstat` package) on the host where both k6
-and httpbin processes are visible. Before starting the test, run this in a
-separate terminal:
-
-```bash
-pidstat -u -h -l -p ALL -C 'k6|gunicorn|httpbin|python' 10 \
-  | tee cpu-usage.log
-```
-
-Run the k6 command above in another terminal. Once the test finishes,
-including any in-flight requests, stop pidstat with **Ctrl+C**.
-`cpu-usage.log` contains the readings and is overwritten each time this
-command runs; use a different filename to preserve earlier runs.
-
-The monitor reports CPU usage averaged over each 10-second interval:
-
-- `-u` selects CPU statistics; `-h` keeps each record on one line.
-- `-l` includes full command lines so you can identify the processes.
-- `-p ALL` discovers processes throughout the run, including new workers;
-  `-C` filters by command name. The filter can include unrelated Python
-  processes, so identify httpbin using its command line.
-- `%CPU` of 100 means one fully occupied CPU core. Multithreaded k6 can
-  exceed 100%. For httpbin with multiple workers, sum their `%CPU` values
-  at each timestamp to get the total for the service.
-
-See the [pidstat manual](https://man7.org/linux/man-pages/man1/pidstat.1.html)
-for additional options.
