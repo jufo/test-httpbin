@@ -1,8 +1,11 @@
 services:
   go-httpbin:
     image: ghcr.io/mccutchen/go-httpbin:latest
-    ports:
-      - "127.0.0.1:8000:8080"
+    network_mode: host
+    environment:
+      HOST: "127.0.0.1"
+      PORT: "8000"
+      LOG_LEVEL: "WARN"
 
   prometheus:
     image: prom/prometheus:latest
